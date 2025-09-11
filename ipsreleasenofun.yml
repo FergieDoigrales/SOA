@@ -1,0 +1,438 @@
+openapi: 3.0.0
+info:
+  title: Organization Management API
+  description: |
+    ## 1st service
+    - CRUD operations for Organizations
+    - sorting, filtering, and pagination for collections
+    -delete by address, group by name, count by address
+    ## 2nd service
+    - `/orgdirectory`.
+    - additional filtering and ordering operations
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: Development server
+
+components:
+  schemas:
+    Coordinates:
+      type: object
+      required:
+        - x
+        - y
+      properties:
+        x:
+          type: number
+          format: double
+          example: 12.34
+        y:
+          type: number
+          format: float
+          example: 5.6
+
+    Address:
+      type: object
+      required:
+        - street
+      properties:
+        street:
+          type: string
+          example: "Main St."
+          description: Поле не может быть null
+
+    OrganizationType:
+      type: string
+      enum:
+        - COMMERCIAL
+        - GOVERNMENT
+        - TRUST
+        - PRIVATE_LIMITED_COMPANY
+        - OPEN_JOINT_STOCK_COMPANY
+
+    OrganizationRequest:
+      type: object
+      required:
+        - name
+        - coordinates
+        - fullName
+        - postalAddress
+      properties:
+        name:
+          type: string
+          example: "Fergoeqs Corp"
+          description: Поле не может быть null, Строка не может быть пустой
+        coordinates:
+          $ref: '#/components/schemas/Coordinates'
+        annualTurnover:
+          type: integer
+          minimum: 1
+          nullable: true
+          example: 1000000
+          description: Значение поля должно быть больше 0
+        fullName:
+          type: string
+          example: "Fergoeqs Corporation Incorporated"
+          description: Значение этого поля должно быть уникальным, Поле не может быть null
+        type:
+          $ref: '#/components/schemas/OrganizationType'
+        postalAddress:
+          $ref: '#/components/schemas/Address'
+
+    OrganizationResponse:
+      allOf:
+        - $ref: '#/components/schemas/OrganizationRequest'
+        - type: object
+          required:
+            - id
+            - creationDate
+          properties:
+            id:
+              type: integer
+              format: int64
+              minimum: 1
+              example: 1
+              description: Значение поля должно быть больше 0, Уникальное, Генерируется автоматически
+            creationDate:
+              type: string
+              format: date-time
+              example: "2023-10-25T12:00:00Z"
+              description: Поле не может быть null, Генерируется автоматически
+
+  parameters:
+    IdPath:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+      description: Unique organization identifier
+
+    PageNumber:
+      in: query
+      name: page
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+      description: Page number (0-based index)
+
+    PageSize:
+      in: query
+      name: size
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+      description: Number of items per page
+
+    SortBy:
+      in: query
+      name: sortBy
+      schema:
+        type: string
+        enum: [id, name, coordinates.x, coordinates.y, creationDate, annualTurnover, fullName, type, postalAddress.street]
+      description: Field to sort by
+
+    SortOrder:
+      in: query
+      name: sortOrder
+      schema:
+        type: string
+        enum: [asc, desc]
+        default: asc
+      description: Sort order
+
+paths:
+  /organizations:
+    get:
+      tags:
+        - Organizations
+      summary: Get a paginated and filtered list of organizations
+      description: |
+        Returns a list of organizations. Supports filtering by any combination of fields, sorting, and pagination.
+        All parameters are passed via query string.
+      parameters:
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/SortBy'
+        - $ref: '#/components/parameters/SortOrder'
+        - in: query
+          name: id
+          schema:
+            type: integer
+            minimum: 1
+          description: Filter by organization ID
+        - in: query
+          name: name
+          schema:
+            type: string
+          description: Filter by organization name
+        - in: query
+          name: fullName
+          schema:
+            type: string
+          description: Filter by full name
+        - in: query
+          name: annualTurnover
+          schema:
+            type: integer
+            minimum: 1
+          description: Filter by annual turnover
+        - in: query
+          name: type
+          schema:
+            $ref: '#/components/schemas/OrganizationType'
+          description: Filter by organization type
+        - in: query
+          name: creationDate
+          schema:
+            type: string
+            format: date-time
+          description: Filter by creation date
+        - in: query
+          name: coordinates.x
+          schema:
+            type: number
+            format: double
+          description: Filter by coordinates X value
+        - in: query
+          name: coordinates.y
+          schema:
+            type: number
+            format: float
+          description: Filter by coordinates Y value
+        - in: query
+          name: postalAddress.street
+          schema:
+            type: string
+          description: Filter by postal address street
+      responses:
+        '200':
+          description: OK
+          content:
+            application/xml:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OrganizationResponse'
+        '400':
+          description: Bad Request - Invalid filter/sort/pagination parameters
+
+    post:
+      tags:
+        - Organizations
+      summary: Create a new organization
+      description: |
+        Creates a new organization. The `id` and `creationDate` are generated automatically and must not be provided.
+      requestBody:
+        required: true
+        content:
+          application/xml:
+            schema:
+              $ref: '#/components/schemas/OrganizationRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/OrganizationResponse'
+          headers:
+            Location:
+              description: URL of the created organization
+              schema:
+                type: string
+                format: uri
+        '400':
+          description: |
+            Bad Request - Invalid input data (e.g., null name, invalid turnover)
+        '409':
+          description: |
+            Conflict - Violation of uniqueness (e.g., duplicate fullName)
+
+  /organizations/{id}:
+    get:
+      tags:
+        - Organizations
+      summary: Get an organization by ID
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/OrganizationResponse'
+        '404':
+          description: Not Found - Organization with the given ID was not found
+
+    put:
+      tags:
+        - Organizations
+      summary: Update an existing organization
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          application/xml:
+            schema:
+              $ref: '#/components/schemas/OrganizationRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/OrganizationResponse'
+        '400':
+          description: Bad Request - Invalid input data
+        '404':
+          description: Not Found
+        '409':
+          description: Conflict - Uniqueness violation
+
+    delete:
+      tags:
+        - Organizations
+      summary: Delete an organization by ID
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '204':
+          description: No Content - Successfully deleted
+        '404':
+          description: Not Found
+
+  /organizations/by-address:
+    delete:
+      tags:
+        - Organizations
+      summary: Delete one organization by its postal address
+      description: |
+        Deletes one (any) organization whose postalAddress.street matches the provided value.
+      parameters:
+        - in: query
+          name: street
+          schema:
+            type: string
+          required: true
+          description: The street address to match
+      responses:
+        '204':
+          description: No Content - Successfully deleted one organization
+        '404':
+          description: Not Found - No organization with the given address was found
+
+  /organizations/group-by-fullname:
+    get:
+      tags:
+        - Organizations
+      summary: Group organizations by fullName and count them
+      description: |
+        Returns a map where the key is the fullName and the value is the count of organizations in that group.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: integer
+                  example: 5
+
+  /organizations/count-by-address:
+    get:
+      tags:
+        - Organizations
+      summary: Count organizations with postal address less than given
+      description: |
+        Returns the count of organizations whose postalAddress.street is lexicographically less than the provided value.
+      parameters:
+        - in: query
+          name: street
+          schema:
+            type: string
+          required: true
+          description: The street address to compare against
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: integer
+                example: 3
+
+  /orgdirectory/filter/turnover/{min-annual-turnover}/{max-annual-turnover}:
+    get:
+      tags:
+        - OrgDirectory
+      summary: Filter organizations by annual turnover range
+      description: |
+        Filters organizations with annual turnover between min and max values (inclusive).
+      parameters:
+        - in: path
+          name: min-annual-turnover
+          required: true
+          schema:
+            type: integer
+            minimum: 0
+          description: Minimum annual turnover value
+        - in: path
+          name: max-annual-turnover
+          required: true
+          schema:
+            type: integer
+            minimum: 0
+          description: Maximum annual turnover value
+      responses:
+        '200':
+          description: OK
+          content:
+            application/xml:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OrganizationResponse'
+        '400':
+          description: Bad Request - Invalid parameters (e.g., min > max)
+
+  /orgdirectory/order/{param-name}/{desc}:
+    get:
+      tags:
+        - OrgDirectory
+      summary: Get organizations sorted by a specific field
+      description: |
+        Returns organizations sorted by the specified field in ascending or descending order.
+      parameters:
+        - in: path
+          name: param-name
+          required: true
+          schema:
+            type: string
+            enum: [id, name, coordinates.x, coordinates.y, creationDate, annualTurnover, fullName, type, postalAddress.street]
+          description: The field to sort by
+        - in: path
+          name: desc
+          required: true
+          schema:
+            type: boolean
+          description: Sort direction (true for descending, false for ascending)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/xml:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OrganizationResponse'
+        '400':
+          description: Bad Request - Invalid sort parameter
