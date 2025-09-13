@@ -216,9 +216,17 @@ paths:
           content:
             application/xml:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/OrganizationResponse'
+                type: object
+                properties:
+                  organizations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/OrganizationResponse'
+                    xml:
+                      name: organization
+                      wrapped: false
+                xml:
+                  name: organizations
         '400':
           description: Bad Request - Invalid filter/sort/pagination parameters
 
@@ -401,6 +409,9 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/OrganizationResponse'
+                xml:
+                  name: organization
+                  wrapped: false
         '400':
           description: Bad Request - Invalid parameters (e.g., min > max)
 
@@ -434,5 +445,8 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/OrganizationResponse'
+                xml:
+                  name: organization
+                  wrapped: false
         '400':
           description: Bad Request - Invalid sort parameter
