@@ -13,7 +13,7 @@ public class OrganizationserviceApplication extends SpringBootServletInitializer
         return application.sources(OrganizationserviceApplication.class);
     }
 
-    public static void main(String[] args) {
-        SpringApplication.run(OrganizationserviceApplication.class, args);
+        public static void main(String[] args) {
+            SpringApplication.run(OrganizationserviceApplication.class, args);
     }
 }

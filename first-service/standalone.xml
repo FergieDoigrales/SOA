@@ -1,0 +1,56 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<server xmlns="urn:jboss:domain:19.0">
+
+    <extensions>
+        <extension module="org.jboss.as.logging"/>
+        <extension module="org.jboss.as.ee"/>
+        <extension module="org.jboss.as.jpa"/>
+        <extension module="org.jboss.as.webservices"/>
+        <extension module="org.wildfly.extension.undertow"/>
+    </extensions>
+
+    <management>
+        <security-realms>
+            <security-realm name="ApplicationRealm">
+                <!-- ниче тут нет пока -->
+            </security-realm>
+        </security-realms>
+    </management>
+
+    <profile>
+
+        <subsystem xmlns="urn:jboss:domain:logging:8.0">
+            <console-handler name="CONSOLE">
+                <level name="INFO"/>
+                <formatter>
+                    <named-formatter name="COLOR-PATTERN"/>
+                </formatter>
+            </console-handler>
+            <root-logger>
+                <handlers>
+                    <handler name="CONSOLE"/>
+                </handlers>
+            </root-logger>
+        </subsystem>
+
+        <subsystem xmlns="urn:wildfly:undertow:20.0">
+            <buffer-cache name="default"/>
+            <server name="default-server">
+                <http-listener name="default" socket-binding="http" redirect-socket="https"/>
+                <host name="default-host" alias="localhost">
+                    <location name="/" handler="welcome-content"/>
+                </host>
+            </server>
+            <servlet-container name="default">
+                <jsp-config/>
+            </servlet-container>
+        </subsystem>
+
+        <subsystem xmlns="urn:jboss:domain:ee:6.0"/>
+        <subsystem xmlns="urn:jboss:domain:jpa:2.0">
+            <jpa default-datasource="" />
+        </subsystem>
+
+    </profile>
+
+</server>
