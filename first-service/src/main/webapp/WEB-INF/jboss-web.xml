@@ -4,5 +4,5 @@
            xsi:schemaLocation="http://www.jboss.com/xml/ns/javaee
            http://www.jboss.org/schema/jbossas/jboss-web_7_0.xsd"
            version="7.0">
-    <context-root>/organizations</context-root>
+    <context-root>/first-service</context-root>
 </jboss-web>

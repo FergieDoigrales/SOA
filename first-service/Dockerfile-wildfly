@@ -1,6 +1,6 @@
 FROM quay.io/wildfly/wildfly:latest
 
-COPY organization-service.war /opt/jboss/wildfly/standalone/deployments/
+COPY /build/libs/organization-service.war /opt/jboss/wildfly/standalone/deployments/
 
 RUN /opt/jboss/wildfly/bin/add-user.sh admin admin --silent
 
