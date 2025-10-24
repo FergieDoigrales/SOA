@@ -1,2 +1,2 @@
-./gradlew assemble -x test
+./gradlew assemble -x test  
 docker-compose up -d --build 
