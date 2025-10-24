@@ -32,7 +32,6 @@ openssl req -x509 -nodes -days 365 \
   -out $CERTS_DIR/server.crt \
   -subj "/CN=localhost"
 
-# Создаём PKCS12 для Java-приложений
 openssl pkcs12 -export \
   -in $CERTS_DIR/server.crt \
   -inkey $CERTS_DIR/server.key \
@@ -40,17 +39,19 @@ openssl pkcs12 -export \
   -out $CERTS_DIR/server.p12 \
   -passout pass:fergoeqskey
 
-# WebClient, Wildfly, Payara
-keytool -importkeystore \
-  -deststoretype JKS \
-  -deststorepass fergoeqskey \
-  -destkeypass fergoeqskey \
-  -destkeystore $CERTS_DIR/truststore.jks \
-  -srckeystore $CERTS_DIR/server.p12 \
-  -srcstoretype PKCS12 \
-  -srcstorepass fergoeqskey \
+# truststore WebClient, Wildfly, Payara в PEM
+keytool -export -alias wildfly \
+  -keystore $CERTS_DIR/server.p12 \
+  -storetype PKCS12 \
+  -storepass fergoeqskey \
+  -rfc \
+  -file $CERTS_DIR/server_public.crt
+
+keytool -import -trustcacerts \
+  -file $CERTS_DIR/server_public.crt \
   -alias wildfly \
+  -keystore $CERTS_DIR/truststore.jks \
+  -storepass fergoeqskey \
   -noprompt
 
 tail -f /dev/null
-

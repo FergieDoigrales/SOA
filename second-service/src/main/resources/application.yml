@@ -19,7 +19,7 @@
 server:
   port: 8080
   servlet:
-    context-path: /orgdirectory
+    context-path: /orgdirectory-service
   ssl:
     enabled: true
     key-store: /certs/server.p12
@@ -27,6 +27,8 @@ server:
     key-store-type: PKCS12
 
 first-service:
-  base-url: https://nginx/organization-service
+#  base-url: https://nginx/first-service
+#  base-url: http://organization-service-wildfly:8080/first-service
+  base-url:  http://organization-service-wildfly:8080/first-service/organizations
   trust-store: /certs/truststore.jks
   trust-store-password: fergoeqskey

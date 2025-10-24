@@ -12,12 +12,15 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
 
 import javax.net.ssl.TrustManagerFactory;
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.security.KeyStore;
 
 @Configuration
 @RequiredArgsConstructor
 public class WebClientConfig {
+    private static final String TRUST_STORE_PATH = "/certs/truststore.jks";
+    private static final String TRUST_STORE_PASSWORD = "fergoeqskey";
 
     @Value("${first-service.base-url}")
     private String firstServiceBaseUrl;
@@ -31,9 +34,9 @@ public class WebClientConfig {
     @Bean
     public WebClient webClient() throws Exception {
 
-        KeyStore trustStore = KeyStore.getInstance("PKCS12");
-        try (InputStream ts = new ClassPathResource(trustStorePath.replace("classpath:", "")).getInputStream()) {
-            trustStore.load(ts, trustStorePassword.toCharArray());
+        KeyStore trustStore = KeyStore.getInstance("JKS");
+        try (FileInputStream fis = new FileInputStream(TRUST_STORE_PATH)) {
+            trustStore.load(fis, TRUST_STORE_PASSWORD.toCharArray());
         }
 
         TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());

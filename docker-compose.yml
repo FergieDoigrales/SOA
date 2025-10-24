@@ -6,7 +6,7 @@ services:
       dockerfile: Dockerfile-wildfly
     container_name: organization-service-wildfly
     ports:
-      - "8080:8080"
+#      - "8080:8080"
       - "9990:9990"
     depends_on:
       - dev-pg12
@@ -24,7 +24,7 @@ services:
       dockerfile: Dockerfile-payara
     container_name: orgdirectory-service-payara
     ports:
-      - "8181:8080"
+#      - "8181:8080"
       - "8444:8443"
     depends_on:
       - wildfly
