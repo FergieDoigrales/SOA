@@ -1,0 +1,19 @@
+<!--<?xml version="1.0" encoding="UTF-8"?>-->
+<!--<datasources xmlns="urn:jboss:domain:datasources:7.0">-->
+<!--    <datasource jndi-name="java:/jdbc/OrganizationDS" pool-name="OrganizationPostgresPesql:ool">-->
+<!--        <connection-url>jdbc:postgr//dev-pg12:5432/soa</connection-url>-->
+<!--        <driver>postgresql</driver>-->
+<!--        <security>-->
+<!--            <user-name>soa</user-name>-->
+<!--            <password>soasoa</password>-->
+<!--        </security>-->
+<!--        <validation>-->
+<!--            <check-valid-connection-sql>SELECT 1</check-valid-connection-sql>-->
+<!--            <background-validation>true</background-validation>-->
+<!--            <background-validation-millis>60000</background-validation-millis>-->
+<!--        </validation>-->
+<!--        <timeout>-->
+<!--            <idle-timeout-minutes>5</idle-timeout-minutes>-->
+<!--        </timeout>-->
+<!--    </datasource>-->
+<!--</datasources>-->
