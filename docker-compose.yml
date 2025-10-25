@@ -1,18 +1,72 @@
 version: '3.8'
 services:
-  swagger-ui:
-    image: swaggerapi/swagger-ui
-    container_name: organization-api-docs
+  wildfly:
+    build:
+      context: ./first-service
+      dockerfile: Dockerfile-wildfly
+    container_name: organization-service-wildfly
     ports:
-      - "8080:8080"
-    volumes:
-      - ./:/usr/share/nginx/html/specs
+#      - "8080:8080"
+      - "9990:9990"
+    depends_on:
+      - dev-pg12
     environment:
-      SWAGGER_JSON: /usr/share/nginx/html/specs/ipsreleasenofun.yml
+      - SPRING_PROFILES_ACTIVE=production
+    networks:
+      - soa-net
     restart: unless-stopped
+    volumes:
+      - nginx-certs:/certs:ro
+
+  payara:
+    build:
+      context: ./second-service
+      dockerfile: Dockerfile-payara
+    container_name: orgdirectory-service-payara
+    ports:
+#      - "8181:8080"
+      - "8444:8443"
+    depends_on:
+      - wildfly
+    networks:
+      - soa-net
+    volumes:
+      - nginx-certs:/certs:ro
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile-nginx
+    container_name: nginx
+    ports:
+      - "443:443"
+#      - "80:80"
+#    volumes:
+#      - nginx-certs:/certs:ro
+#      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - wildfly
+      - payara
+      - certs-gen
+    networks:
+      - soa-net
+    volumes:
+      - nginx-certs:/certs:ro
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+
+  certs-gen:
+    image: openjdk:17-slim
+    container_name: certs-gen
+    volumes:
+      - ./nginx/certs-scripts:/certs-scripts:ro
+      - nginx-certs:/certs
+    working_dir: /certs
+    entrypoint: [ "sh", "/certs-scripts/generate-certs.sh" ]
+
+
 
   dev-pg12:
-    container_name: soa
+    container_name: soa-db
     image: postgres:17
     environment:
       POSTGRES_DB: soa
@@ -23,13 +77,28 @@ services:
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ib -d ib"]
+      test: ["CMD-SHELL", "pg_isready -U soa -d soa"]
       interval: 5s
       timeout: 5s
       retries: 3
+    networks:
+      - soa-net
 
-
+  swagger-ui:
+    image: swaggerapi/swagger-ui
+    container_name: organization-api-docs
+    ports:
+      - "8081:8080"
+    environment:
+      SWAGGER_JSON: /usr/share/nginx/html/specs/openapi.yml
+      API_URL: http://localhost:8080/organization-service/v3/api-docs
+    restart: unless-stopped
+    networks:
+      - soa-net
 
 volumes:
   dev-db-volume: {}
+  nginx-certs: {}
 
+networks:
+  soa-net:

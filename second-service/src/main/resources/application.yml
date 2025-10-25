@@ -1,0 +1,34 @@
+#server:
+#  port: 8080
+#  servlet:
+#    context-path: /orgdirectory
+#  ssl:
+#    enabled: true
+#    key-store: classpath:payara.jks
+#    key-store-password: fergoeqskey
+#
+##first-service:
+##  base-url: https://wildfly:8443/organizations
+##  trust-store: classpath:truststore.jks
+##  trust-store-password: fergoeqskey
+#
+#first-service:
+#  base-url: https://nginx/organization-service
+#  trust-store: classpath:truststore.jks
+#  trust-store-password: fergoeqskey
+server:
+  port: 8080
+  servlet:
+    context-path: /orgdirectory-service
+  ssl:
+    enabled: true
+    key-store: /certs/server.p12
+    key-store-password: fergoeqskey
+    key-store-type: PKCS12
+
+first-service:
+#  base-url: https://nginx/first-service
+#  base-url: http://organization-service-wildfly:8080/first-service
+  base-url:  http://organization-service-wildfly:8080/first-service/organizations
+  trust-store: /certs/truststore.jks
+  trust-store-password: fergoeqskey
