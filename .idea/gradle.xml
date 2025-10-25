@@ -6,7 +6,7 @@
       <GradleProjectSettings>
         <option name="externalProjectPath" value="$PROJECT_DIR$/first-service" />
         <option name="gradleHome" value="C:\gradle-9.1.0" />
-        <option name="gradleJvm" value="21" />
+        <option name="gradleJvm" value="openjdk-21" />
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$/first-service" />
@@ -15,7 +15,7 @@
       </GradleProjectSettings>
       <GradleProjectSettings>
         <option name="externalProjectPath" value="$PROJECT_DIR$/second-service" />
-        <option name="gradleJvm" value="21" />
+        <option name="gradleJvm" value="openjdk-21" />
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$/second-service" />
