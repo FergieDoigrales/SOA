@@ -60,3 +60,26 @@ body {
         font-size: 0.875rem;
     }
 }
+.sort-icon {
+    font-size: 0.8em;
+    opacity: 0.7;
+}
+
+.priority-badge {
+    font-size: 0.6em;
+    min-width: 16px;
+    display: inline-block;
+}
+
+th[data-field]:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.table-dark th[data-field] {
+    transition: background-color 0.2s ease;
+}
+
+.sort-help {
+    font-size: 0.8rem;
+    opacity: 0.8;
+}

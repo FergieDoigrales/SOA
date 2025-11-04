@@ -471,3 +471,268 @@ async function deleteByAddress() {
         console.error('Error:', error);
     }
 }
+
+function generateOrganizationForm(formId) {
+    const form = document.getElementById(formId);
+    form.innerHTML = `
+        <div class="row">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label class="form-label">Name *</label>
+                    <input type="text" class="form-control" name="name" maxlength="255" required>
+                    <div class="form-text">Max 255 characters</div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label class="form-label">Full Name *</label>
+                    <input type="text" class="form-control" name="fullName" maxlength="255" required>
+                    <div class="form-text">Max 255 characters</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label class="form-label">Coordinate X *</label>
+                    <input type="number" step="any" class="form-control" name="coordinates.x"
+                           min="-1.7976931348623157e+308" max="1.7976931348623157e+308" required>
+                    <div class="form-text">Double value (-1.7E308 to 1.7E308)</div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label class="form-label">Coordinate Y *</label>
+                    <input type="number" step="any" class="form-control" name="coordinates.y"
+                           min="-3.4028235e+38" max="3.4028235e+38" required>
+                    <div class="form-text">Float value (-3.4E38 to 3.4E38)</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label class="form-label">Annual Turnover</label>
+                    <input type="number" class="form-control" name="annualTurnover"
+                           min="1" max="2147483647" step="1">
+                    <div class="form-text">Integer value, must be greater than 0, max 2,147,483,647</div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label class="form-label">Type</label>
+                    <select class="form-select" name="type">
+                        <option value="">Select type</option>
+                        <option value="COMMERCIAL">Commercial</option>
+                        <option value="GOVERNMENT">Government</option>
+                        <option value="TRUST">Trust</option>
+                        <option value="PRIVATE_LIMITED_COMPANY">Private Limited Company</option>
+                        <option value="OPEN_JOINT_STOCK_COMPANY">Open Joint Stock Company</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Street Address *</label>
+            <input type="text" class="form-control" name="postalAddress.street" maxlength="255" required>
+            <div class="form-text">Max 255 characters</div>
+        </div>
+    `;
+}
+
+async function createOrganization() {
+    try {
+        const formData = getFormData('createForm');
+        const organizationData = {
+            name: formData.name,
+            coordinates: {
+                x: parseCoordinateX(formData['coordinates.x']),
+                y: parseCoordinateY(formData['coordinates.y'])
+            },
+            annualTurnover: formData.annualTurnover ? parseInt(formData.annualTurnover) : null,
+            fullName: formData.fullName,
+            type: formData.type || null,
+            postalAddress: {
+                street: formData['postalAddress.street']
+            }
+        };
+
+        const validationError = validateOrganizationData(organizationData);
+        if (validationError) {
+            throw new Error(validationError);
+        }
+
+        const response = await fetch(`${API_CONFIG.ORGANIZATION_SERVICE}/organizations`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(organizationData)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to create organization');
+        }
+
+        const result = await response.json();
+        showAlert('Organization created successfully!', 'success');
+        document.getElementById('createModal').querySelector('.btn-close').click();
+        loadOrganizations();
+
+    } catch (error) {
+        showAlert(`Error creating organization: ${error.message}`, 'danger');
+        console.error('Error:', error);
+    }
+}
+
+async function updateOrganization() {
+    if (!currentEditingId) return;
+
+    try {
+        const formData = getFormData('editForm');
+        const organizationData = {
+            name: formData.name,
+            coordinates: {
+                x: parseCoordinateX(formData['coordinates.x']),
+                y: parseCoordinateY(formData['coordinates.y'])
+            },
+            annualTurnover: formData.annualTurnover ? parseInt(formData.annualTurnover) : null,
+            fullName: formData.fullName,
+            type: formData.type || null,
+            postalAddress: {
+                street: formData['postalAddress.street']
+            }
+        };
+
+        // Валидация
+        const validationError = validateOrganizationData(organizationData);
+        if (validationError) {
+            throw new Error(validationError);
+        }
+
+        const response = await fetch(`${API_CONFIG.ORGANIZATION_SERVICE}/organizations/${currentEditingId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(organizationData)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to update organization');
+        }
+
+        const result = await response.json();
+        showAlert('Organization updated successfully!', 'success');
+        document.getElementById('editModal').querySelector('.btn-close').click();
+        loadOrganizations();
+
+    } catch (error) {
+        showAlert(`Error updating organization: ${error.message}`, 'danger');
+        console.error('Error:', error);
+    }
+}
+
+function parseCoordinateX(value) {
+    const parsed = parseFloat(value);
+    if (isNaN(parsed)) {
+        throw new Error('Coordinate X must be a valid number');
+    }
+    return parsed;
+}
+
+function parseCoordinateY(value) {
+    const parsed = parseFloat(value);
+    if (isNaN(parsed)) {
+        throw new Error('Coordinate Y must be a valid number');
+    }
+    return parseFloat(parsed.toPrecision(7));
+}
+
+function validateOrganizationData(data) {
+    if (data.name.length > 255) {
+        return 'Name must not exceed 255 characters';
+    }
+    if (data.fullName.length > 255) {
+        return 'Full name must not exceed 255 characters';
+    }
+    if (data.postalAddress.street.length > 255) {
+        return 'Street address must not exceed 255 characters';
+    }
+
+    if (data.coordinates.x < -1.7976931348623157e+308 || data.coordinates.x > 1.7976931348623157e+308) {
+        return 'Coordinate X is out of valid range for Double';
+    }
+    if (data.coordinates.y < -3.4028235e+38 || data.coordinates.y > 3.4028235e+38) {
+        return 'Coordinate Y is out of valid range for Float';
+    }
+
+    if (data.annualTurnover !== null) {
+        if (data.annualTurnover < 1) {
+            return 'Annual turnover must be greater than 0';
+        }
+        if (data.annualTurnover > 2147483647) {
+            return 'Annual turnover exceeds maximum value for Integer';
+        }
+    }
+
+    return null;
+}
+
+function validateTurnoverInput(input) {
+    const value = parseFloat(input.value);
+    const min = parseFloat(input.min);
+    const max = parseFloat(input.max);
+    const messageElement = document.getElementById('turnoverValidationMessage');
+
+    if (isNaN(value)) {
+        input.classList.remove('is-valid', 'is-invalid');
+        messageElement.textContent = '';
+        return;
+    }
+
+    if (value < min || value > max) {
+        input.classList.remove('is-valid');
+        input.classList.add('is-invalid');
+        messageElement.textContent = `Value must be between ${min.toLocaleString()} and ${max.toLocaleString()}`;
+        messageElement.className = 'text-danger';
+    } else {
+        input.classList.remove('is-invalid');
+        input.classList.add('is-valid');
+        messageElement.textContent = '';
+    }
+
+    const minInput = document.getElementById('minTurnover');
+    const maxInput = document.getElementById('maxTurnover');
+    const minValue = parseFloat(minInput.value);
+    const maxValue = parseFloat(maxInput.value);
+
+    if (!isNaN(minValue) && !isNaN(maxValue) && minValue > maxValue) {
+        messageElement.textContent = 'Min turnover cannot be greater than max turnover';
+        messageElement.className = 'text-danger';
+        minInput.classList.add('is-invalid');
+        maxInput.classList.add('is-invalid');
+    }
+}
+
+
+function setupAddressInputs() {
+    const addressInputs = document.querySelectorAll('input[id$="AddressStreet"]');
+    addressInputs.forEach(input => {
+        input.setAttribute('maxlength', '255');
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadOrganizations();
+    setupEventListeners();
+    generateOrganizationForm('createForm');
+    generateOrganizationForm('editForm');
+    setupTableSorting();
+    setupAddressInputs();
+});
