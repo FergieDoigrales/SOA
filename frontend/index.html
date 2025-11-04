@@ -40,25 +40,35 @@
 
     <div class="tab-content mt-3">
         <div class="tab-pane fade show active" id="organizations">
+
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h4>Organizations Management</h4>
-                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createModal">
-                    <i class="fas fa-plus me-1"></i>Create Organization
-                </button>
+                <div>
+                    <small class="text-muted me-3">
+                        <i class="fas fa-mouse me-1"></i>Click to sort |
+                        <i class="fas fa-mouse-pointer me-1"></i>Ctrl+Click for multi-sort
+                    </small>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="clearSorts()">
+                        <i class="fas fa-times me-1"></i>Clear Sorts
+                    </button>
+                    <button class="btn btn-success ms-2" data-bs-toggle="modal" data-bs-target="#createModal">
+                        <i class="fas fa-plus me-1"></i>Create Organization
+                    </button>
+                </div>
             </div>
 
             <div class="table-responsive">
-                <table class="table table-striped table-hover">
+                <table class="table table-striped table-hover" id="organizationsMainTable">
                     <thead class="table-dark">
                     <tr>
-                        <th>ID</th>
-                        <th>Name</th>
-                        <th>Full Name</th>
-                        <th>Type</th>
-                        <th>Annual Turnover</th>
-                        <th>Address</th>
+                        <th data-field="id" style="cursor: pointer;">ID <span class="sort-icon"></span><span class="priority-badge badge bg-secondary ms-1"></span></th>
+                        <th data-field="name" style="cursor: pointer;">Name <span class="sort-icon"></span><span class="priority-badge badge bg-secondary ms-1"></span></th>
+                        <th data-field="fullName" style="cursor: pointer;">Full Name <span class="sort-icon"></span><span class="priority-badge badge bg-secondary ms-1"></span></th>
+                        <th data-field="type" style="cursor: pointer;">Type <span class="sort-icon"></span><span class="priority-badge badge bg-secondary ms-1"></span></th>
+                        <th data-field="annualTurnover" style="cursor: pointer;">Annual Turnover <span class="sort-icon"></span><span class="priority-badge badge bg-secondary ms-1"></span></th>
+                        <th data-field="postalAddress.street" style="cursor: pointer;">Address <span class="sort-icon"></span><span class="priority-badge badge bg-secondary ms-1"></span></th>
                         <th>Coordinates</th>
-                        <th>Created</th>
+                        <th data-field="creationDate" style="cursor: pointer;">Created <span class="sort-icon"></span><span class="priority-badge badge bg-secondary ms-1"></span></th>
                         <th>Actions</th>
                     </tr>
                     </thead>
@@ -66,7 +76,6 @@
                     </tbody>
                 </table>
             </div>
-
             <nav>
                 <ul class="pagination justify-content-center" id="pagination">
                 </ul>
@@ -157,12 +166,33 @@
                                 <div class="row">
                                     <div class="col-md-6">
                                         <label class="form-label">Min Turnover</label>
-                                        <input type="number" class="form-control" id="minTurnover" min="0">
+                                        <input type="number"
+                                               class="form-control"
+                                               id="minTurnover"
+                                               min="0"
+                                               max="2147483647"
+                                               step="1"
+                                               placeholder="0"
+                                               oninput="validateTurnoverInput(this)"
+                                               onblur="formatTurnoverInput(this)">
+                                        <div class="form-text">Min: 0, Max: 2,147,483,647</div>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label">Max Turnover</label>
-                                        <input type="number" class="form-control" id="maxTurnover" min="0">
+                                        <input type="number"
+                                               class="form-control"
+                                               id="maxTurnover"
+                                               min="0"
+                                               max="2147483647"
+                                               step="1"
+                                               placeholder="1000000"
+                                               oninput="validateTurnoverInput(this)"
+                                               onblur="formatTurnoverInput(this)">
+                                        <div class="form-text">Min: 0, Max: 2,147,483,647</div>
                                     </div>
+                                </div>
+                                <div class="mt-2">
+                                    <small class="text-muted" id="turnoverValidationMessage"></small>
                                 </div>
                                 <button type="button" class="btn btn-primary w-100 mt-3" onclick="filterByTurnover()">
                                     <i class="fas fa-filter me-1"></i>Filter
@@ -207,6 +237,7 @@
     </div>
 </div>
 
+<!-- Модальные окна остаются без изменений -->
 <div class="modal fade" id="createModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -255,7 +286,9 @@
             <div class="modal-body">
                 <div class="mb-3">
                     <label class="form-label">Street Address</label>
-                    <input type="text" class="form-control" id="countAddressStreet" placeholder="Enter street address">
+                    <input type="text" class="form-control" id="countAddressStreet"
+                           placeholder="Enter street address" maxlength="255">
+                    <div class="form-text">Max 255 characters</div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -276,8 +309,9 @@
             <div class="modal-body">
                 <div class="mb-3">
                     <label class="form-label">Street Address</label>
-                    <input type="text" class="form-control" id="deleteAddressStreet" placeholder="Enter street address">
-                    <div class="form-text">This will delete one organization with matching address.</div>
+                    <input type="text" class="form-control" id="deleteAddressStreet"
+                           placeholder="Enter street address" maxlength="255">
+                    <div class="form-text">Max 255 characters. This will delete one organization with matching address.</div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -292,5 +326,6 @@
 <script src="js/app.js"></script>
 <script src="js/organization-service.js"></script>
 <script src="js/orgdirectory-service.js"></script>
+
 </body>
 </html>

@@ -8,16 +8,110 @@ let currentPage = 0;
 let pageSize = 10;
 let totalPages = 0;
 let activeFilters = [];
+let currentSorts = [{ field: 'id', direction: 'asc', priority: 1 }];
 
 document.addEventListener('DOMContentLoaded', function() {
     loadOrganizations();
     setupEventListeners();
     generateOrganizationForm('createForm');
     generateOrganizationForm('editForm');
+    setupTableSorting();
 });
 
 function setupEventListeners() {
     document.getElementById('filterField').addEventListener('change', updateFilterOperatorOptions);
+}
+
+function setupTableSorting() {
+    const organizationsTable = document.getElementById('organizationsMainTable');
+    if (organizationsTable) {
+        organizationsTable.addEventListener('click', function(e) {
+            const th = e.target.closest('th[data-field]');
+            if (th) {
+                const field = th.getAttribute('data-field');
+                const ctrlPressed = e.ctrlKey || e.metaKey;
+                handleSortClick(field, ctrlPressed);
+            }
+        });
+    }
+}
+
+function handleSortClick(field, isMultiSort = false) {
+    console.log('Sort click:', field, 'Multi:', isMultiSort);
+
+    const existingSortIndex = currentSorts.findIndex(sort => sort.field === field);
+
+    if (existingSortIndex !== -1) {
+        currentSorts[existingSortIndex].direction =
+            currentSorts[existingSortIndex].direction === 'asc' ? 'desc' : 'asc';
+
+        if (!isMultiSort) {
+            const existingSort = currentSorts.splice(existingSortIndex, 1)[0];
+            currentSorts.unshift(existingSort);
+            updateSortPriorities();
+        }
+    } else {
+        if (isMultiSort) {
+            const newPriority = currentSorts.length > 0 ? Math.max(...currentSorts.map(s => s.priority)) + 1 : 1;
+            currentSorts.push({
+                field: field,
+                direction: 'asc',
+                priority: newPriority
+            });
+        } else {
+            currentSorts = [{
+                field: field,
+                direction: 'asc',
+                priority: 1
+            }];
+        }
+    }
+
+    updateSortIndicators();
+    loadOrganizations(0);
+}
+
+function updateSortPriorities() {
+    currentSorts.forEach((sort, index) => {
+        sort.priority = index + 1;
+    });
+}
+
+function updateSortIndicators() {
+    const table = document.getElementById('organizationsMainTable');
+    if (!table) return;
+
+    const headers = table.querySelectorAll('th[data-field]');
+    headers.forEach(header => {
+        const field = header.getAttribute('data-field');
+        let sortIcon = header.querySelector('.sort-icon');
+        let priorityBadge = header.querySelector('.priority-badge');
+
+        if (!sortIcon) {
+            sortIcon = document.createElement('span');
+            sortIcon.className = 'sort-icon ms-1';
+            header.appendChild(sortIcon);
+        }
+
+        if (!priorityBadge) {
+            priorityBadge = document.createElement('span');
+            priorityBadge.className = 'priority-badge badge bg-secondary ms-1';
+            header.appendChild(priorityBadge);
+        }
+
+        const sortConfig = currentSorts.find(sort => sort.field === field);
+
+        if (sortConfig) {
+            sortIcon.className = `sort-icon ms-1 fas fa-chevron-${sortConfig.direction === 'asc' ? 'up' : 'down'}`;
+            priorityBadge.textContent = sortConfig.priority;
+            priorityBadge.className = `priority-badge badge ${sortConfig.priority === 1 ? 'bg-primary' : 'bg-secondary'} ms-1`;
+            header.style.color = '#0d6efd';
+        } else {
+            sortIcon.className = 'sort-icon ms-1';
+            priorityBadge.textContent = '';
+            header.style.color = '';
+        }
+    });
 }
 
 async function loadOrganizations(page = 0) {
@@ -33,7 +127,7 @@ async function loadOrganizations(page = 0) {
                 page: page,
                 size: pageSize,
                 filters: [],
-                sort: [{ field: 'id', direction: 'asc' }]
+                sort: currentSorts
             })
         });
 
@@ -55,6 +149,7 @@ async function loadOrganizations(page = 0) {
         console.error('Error details:', error);
     }
 }
+
 function displayOrganizations(organizations) {
     const tbody = document.getElementById('organizationsTable');
     tbody.innerHTML = '';
@@ -94,6 +189,12 @@ function displayOrganizations(organizations) {
         `;
         tbody.appendChild(row);
     });
+}
+
+function clearSorts() {
+    currentSorts = [{ field: 'id', direction: 'asc', priority: 1 }];
+    updateSortIndicators();
+    loadOrganizations(0);
 }
 
 function setupPagination(currentPage, totalPages) {
