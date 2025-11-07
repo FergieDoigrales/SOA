@@ -47,3 +47,6 @@ jobs:
 
       - name: Push Frontend/Nginx image
         run: docker push femeepohua/fergoeqs:frontend-latest
+
+      - name: Trigger deploy on VPS
+        run: curl -X POST http://138.124.89.175:9000/hooks/auto-deploy
