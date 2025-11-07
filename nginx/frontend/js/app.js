@@ -9,6 +9,58 @@ let pageSize = 10;
 let totalPages = 0;
 let activeFilters = [];
 let currentSorts = [{ field: 'id', direction: 'asc', priority: 1 }];
+let currentEditingId = null;
+
+const FIELD_CONSTRAINTS = {
+    name: {
+        type: 'string',
+        maxLength: 255,
+        pattern: '[\\s\\S]{1,255}',
+        allowedChars: 'any symbols',
+        min: 1,
+        max: 255
+    },
+    fullName: {
+        type: 'string',
+        maxLength: 255,
+        pattern: '[\\s\\S]{1,255}',
+        allowedChars: 'any symbols',
+        min: 1,
+        max: 255
+    },
+    street: {
+        type: 'string',
+        maxLength: 255,
+        pattern: '[\\s\\S]{1,255}',
+        allowedChars: 'any symbols',
+        min: 1,
+        max: 255
+    },
+    coordinatesX: {
+        type: 'double',
+        min: -1.7976931348623157e+308,
+        max: 1.7976931348623157e+308,
+        pattern: '[+-]?([0-9]*[.])?[0-9]+',
+        allowedChars: 'numbers, point, +/-',
+        step: 'any'
+    },
+    coordinatesY: {
+        type: 'float',
+        min: -3.4028235e+38,
+        max: 3.4028235e+38,
+        pattern: '[+-]?([0-9]*[.])?[0-9]+',
+        allowedChars: 'numbers, point, +/-',
+        step: 'any'
+    },
+    annualTurnover: {
+        type: 'integer',
+        min: 1,
+        max: 2147483647,
+        pattern: '[0-9]+',
+        allowedChars: 'numbers only',
+        step: 1
+    }
+};
 
 document.addEventListener('DOMContentLoaded', function() {
     loadOrganizations();
@@ -16,10 +68,120 @@ document.addEventListener('DOMContentLoaded', function() {
     generateOrganizationForm('createForm');
     generateOrganizationForm('editForm');
     setupTableSorting();
+    setupInputValidation();
 });
 
 function setupEventListeners() {
     document.getElementById('filterField').addEventListener('change', updateFilterOperatorOptions);
+}
+
+function setupInputValidation() {
+    document.addEventListener('input', function(e) {
+        const fieldName = e.target.name;
+
+        if (fieldName === 'annualTurnover' || e.target.id === 'minTurnover' || e.target.id === 'maxTurnover') {
+            validateIntegerInput(e.target);
+        } else if (fieldName === 'coordinates.x') {
+            validateDoubleInput(e.target);
+        } else if (fieldName === 'coordinates.y') {
+            validateFloatInput(e.target);
+        } else if (fieldName === 'name' || fieldName === 'fullName' || fieldName === 'postalAddress.street') {
+            validateStringInput(e.target, FIELD_CONSTRAINTS[fieldName === 'postalAddress.street' ? 'street' : fieldName]);
+        }
+    });
+}
+
+function validateIntegerInput(input) {
+    let value = input.value;
+
+    value = value.replace(/[^\d]/g, '');
+
+    if (value.length > 1 && value.startsWith('0')) {
+        value = value.replace(/^0+/, '');
+        if (value === '') value = '0';
+    }
+
+    const numValue = parseInt(value || '0');
+    if (value && (numValue < FIELD_CONSTRAINTS.annualTurnover.min || numValue > FIELD_CONSTRAINTS.annualTurnover.max)) {
+        input.classList.add('is-invalid');
+    } else {
+        input.classList.remove('is-invalid');
+    }
+
+    input.value = value;
+}
+
+function validateDoubleInput(input) {
+    let value = input.value;
+
+    value = value.replace(/[^\d.-]/g, '');
+
+    if (value.includes('-')) {
+        if (value.indexOf('-') !== 0) {
+            value = value.replace(/-/g, '');
+        } else if (value.lastIndexOf('-') > 0) {
+            value = '-' + value.replace(/-/g, '');
+        }
+    }
+
+    if ((value.match(/\./g) || []).length > 1) {
+        const parts = value.split('.');
+        value = parts[0] + '.' + parts.slice(1).join('');
+    }
+
+    const numValue = parseFloat(value || '0');
+    if (value && !isNaN(numValue) &&
+        (numValue < FIELD_CONSTRAINTS.coordinatesX.min || numValue > FIELD_CONSTRAINTS.coordinatesX.max)) {
+        input.classList.add('is-invalid');
+    } else {
+        input.classList.remove('is-invalid');
+    }
+
+    input.value = value;
+}
+
+function validateFloatInput(input) {
+    let value = input.value;
+
+    value = value.replace(/[^\d.-]/g, '');
+
+    if (value.includes('-')) {
+        if (value.indexOf('-') !== 0) {
+            value = value.replace(/-/g, '');
+        } else if (value.lastIndexOf('-') > 0) {
+            value = '-' + value.replace(/-/g, '');
+        }
+    }
+
+    if ((value.match(/\./g) || []).length > 1) {
+        const parts = value.split('.');
+        value = parts[0] + '.' + parts.slice(1).join('');
+    }
+
+    const numValue = parseFloat(value || '0');
+    if (value && !isNaN(numValue) &&
+        (numValue < FIELD_CONSTRAINTS.coordinatesY.min || numValue > FIELD_CONSTRAINTS.coordinatesY.max)) {
+        input.classList.add('is-invalid');
+    } else {
+        input.classList.remove('is-invalid');
+    }
+
+    input.value = value;
+}
+
+function validateStringInput(input, constraints) {
+    let value = input.value;
+
+    if (value.length > constraints.maxLength) {
+        value = value.substring(0, constraints.maxLength);
+        input.value = value;
+    }
+
+    if (value.length < constraints.min) {
+        input.classList.add('is-invalid');
+    } else {
+        input.classList.remove('is-invalid');
+    }
 }
 
 function setupTableSorting() {
@@ -118,7 +280,7 @@ async function loadOrganizations(page = 0) {
     try {
         showLoading('organizationsTable');
 
-        const response = await fetch(`${API_CONFIG.ORGANIZATION_SERVICE}/organizations/search`, {
+        const response = await fetch(`${API_CONFIG.ORGDIRECTORY_SERVICE}/orgdirectory/order`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -294,65 +456,292 @@ function showLoading(elementId) {
     }
 }
 
-//function generateOrganizationForm(formId) {
-//    const form = document.getElementById(formId);
-//    form.innerHTML = `
-//        <div class="row">
-//            <div class="col-md-6">
-//                <div class="mb-3">
-//                    <label class="form-label">Name *</label>
-//                    <input type="text" class="form-control" name="name" required>
-//                </div>
-//            </div>
-//            <div class="col-md-6">
-//                <div class="mb-3">
-//                    <label class="form-label">Full Name *</label>
-//                    <input type="text" class="form-control" name="fullName" required>
-//                </div>
-//            </div>
-//        </div>
-//
-//        <div class="row">
-//            <div class="col-md-6">
-//                <div class="mb-3">
-//                    <label class="form-label">Coordinate X *</label>
-//                    <input type="number" step="any" class="form-control" name="coordinates.x" required>
-//                </div>
-//            </div>
-//            <div class="col-md-6">
-//                <div class="mb-3">
-//                    <label class="form-label">Coordinate Y *</label>
-//                    <input type="number" step="any" class="form-control" name="coordinates.y" required>
-//                </div>
-//            </div>
-//        </div>
-//
-//        <div class="row">
-//            <div class="col-md-6">
-//                <div class="mb-3">
-//                    <label class="form-label">Annual Turnover</label>
-//                    <input type="number" class="form-control" name="annualTurnover" min="1">
-//                    <div class="form-text">Must be greater than 0</div>
-//                </div>
-//            </div>
-//            <div class="col-md-6">
-//                <div class="mb-3">
-//                    <label class="form-label">Type</label>
-//                    <select class="form-select" name="type">
-//                        <option value="">Select type</option>
-//                        <option value="COMMERCIAL">Commercial</option>
-//                        <option value="GOVERNMENT">Government</option>
-//                        <option value="TRUST">Trust</option>
-//                        <option value="PRIVATE_LIMITED_COMPANY">Private Limited Company</option>
-//                        <option value="OPEN_JOINT_STOCK_COMPANY">Open Joint Stock Company</option>
-//                    </select>
-//                </div>
-//            </div>
-//        </div>
-//
-//        <div class="mb-3">
-//            <label class="form-label">Street Address *</label>
-//            <input type="text" class="form-control" name="postalAddress.street" required>
-//        </div>
-//    `;
-//}
+function generateOrganizationForm(formId) {
+    const form = document.getElementById(formId);
+    form.innerHTML = `
+        <div class="row">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label class="form-label">Name *</label>
+                    <input type="text" class="form-control" name="name"
+                           maxlength="${FIELD_CONSTRAINTS.name.maxLength}"
+                           pattern="${FIELD_CONSTRAINTS.name.pattern}"
+                           title="Name (1-${FIELD_CONSTRAINTS.name.maxLength} characters)"
+                           required>
+                    <div class="form-text">Required, ${FIELD_CONSTRAINTS.name.maxLength} characters max, ${FIELD_CONSTRAINTS.name.allowedChars}</div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label class="form-label">Full Name *</label>
+                    <input type="text" class="form-control" name="fullName"
+                           maxlength="${FIELD_CONSTRAINTS.fullName.maxLength}"
+                           pattern="${FIELD_CONSTRAINTS.fullName.pattern}"
+                           title="Full Name (1-${FIELD_CONSTRAINTS.fullName.maxLength} characters)"
+                           required>
+                    <div class="form-text">Required, ${FIELD_CONSTRAINTS.fullName.maxLength} characters max, ${FIELD_CONSTRAINTS.fullName.allowedChars}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label class="form-label">Coordinate X *</label>
+                    <input type="text" class="form-control" name="coordinates.x"
+                           pattern="${FIELD_CONSTRAINTS.coordinatesX.pattern}"
+                           title="Double value (${FIELD_CONSTRAINTS.coordinatesX.min} to ${FIELD_CONSTRAINTS.coordinatesX.max})"
+                           required>
+                    <div class="form-text">Required, Double type, ${FIELD_CONSTRAINTS.coordinatesX.allowedChars}</div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label class="form-label">Coordinate Y *</label>
+                    <input type="text" class="form-control" name="coordinates.y"
+                           pattern="${FIELD_CONSTRAINTS.coordinatesY.pattern}"
+                           title="Float value (${FIELD_CONSTRAINTS.coordinatesY.min} to ${FIELD_CONSTRAINTS.coordinatesY.max})"
+                           required>
+                    <div class="form-text">Required, Float type, ${FIELD_CONSTRAINTS.coordinatesY.allowedChars}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label class="form-label">Annual Turnover</label>
+                    <input type="text" class="form-control" name="annualTurnover"
+                           pattern="${FIELD_CONSTRAINTS.annualTurnover.pattern}"
+                           title="Integer value (${FIELD_CONSTRAINTS.annualTurnover.min} to ${FIELD_CONSTRAINTS.annualTurnover.max})">
+                    <div class="form-text">Optional, Integer type, ${FIELD_CONSTRAINTS.annualTurnover.min}-${FIELD_CONSTRAINTS.annualTurnover.max}, ${FIELD_CONSTRAINTS.annualTurnover.allowedChars}</div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label class="form-label">Type</label>
+                    <select class="form-select" name="type">
+                        <option value="">Select type</option>
+                        <option value="COMMERCIAL">Commercial</option>
+                        <option value="GOVERNMENT">Government</option>
+                        <option value="TRUST">Trust</option>
+                        <option value="PRIVATE_LIMITED_COMPANY">Private Limited Company</option>
+                        <option value="OPEN_JOINT_STOCK_COMPANY">Open Joint Stock Company</option>
+                    </select>
+                    <div class="form-text">Optional, select from predefined values</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Street Address *</label>
+            <input type="text" class="form-control" name="postalAddress.street"
+                   maxlength="${FIELD_CONSTRAINTS.street.maxLength}"
+                   pattern="${FIELD_CONSTRAINTS.street.pattern}"
+                   title="Street Address (1-${FIELD_CONSTRAINTS.street.maxLength} characters)"
+                   required>
+            <div class="form-text">Required, ${FIELD_CONSTRAINTS.street.maxLength} characters max, ${FIELD_CONSTRAINTS.street.allowedChars}</div>
+        </div>
+    `;
+}
+
+function getFormData(formId) {
+    const form = document.getElementById(formId);
+    const formData = new FormData(form);
+    const data = {};
+
+    for (let [key, value] of formData.entries()) {
+        data[key] = value;
+    }
+
+    return data;
+}
+
+function addFilter() {
+    const field = document.getElementById('filterField').value;
+    const operator = document.getElementById('filterOperator').value;
+    const value = document.getElementById('filterValue').value;
+
+    if (!field || !operator || !value) {
+        showAlert('Please fill all filter fields', 'warning');
+        return;
+    }
+
+    const filter = {
+        field,
+        operator,
+        value: parseFilterValue(value, operator, field)
+    };
+
+    activeFilters.push(filter);
+    updateActiveFiltersDisplay();
+    document.getElementById('filterValue').value = '';
+}
+
+function parseFilterValue(value, operator, field) {
+    if (operator === 'in') {
+        return value.split(',').map(v => v.trim());
+    }
+    if (operator === 'between') {
+        const values = value.split(',').map(v => v.trim());
+        if (values.length === 2) {
+            return values.map(v => convertFilterValue(v, field));
+        }
+    }
+    return convertFilterValue(value, field);
+}
+
+function convertFilterValue(value, field) {
+    if (field === 'annualTurnover') {
+        const parsed = parseInt(value, 10);
+        return isNaN(parsed) ? value : parsed;
+    } else if (field.includes('coordinates')) {
+        const parsed = parseFloat(value);
+        return isNaN(parsed) ? value : parsed;
+    }
+    return isNaN(value) ? value : parseFloat(value);
+}
+
+function updateActiveFiltersDisplay() {
+    const container = document.getElementById('activeFilters');
+    container.innerHTML = '<h6>Active Filters:</h6>';
+
+    activeFilters.forEach((filter, index) => {
+        const filterTag = document.createElement('div');
+        filterTag.className = 'filter-tag';
+        filterTag.innerHTML = `
+            ${filter.field} ${filter.operator} ${JSON.stringify(filter.value)}
+            <span class="close" onclick="removeFilter(${index})">&times;</span>
+        `;
+        container.appendChild(filterTag);
+    });
+}
+
+function removeFilter(index) {
+    activeFilters.splice(index, 1);
+    updateActiveFiltersDisplay();
+}
+
+function clearFilters() {
+    activeFilters = [];
+    updateActiveFiltersDisplay();
+}
+
+async function performSearch() {
+    try {
+        showLoading('searchResults');
+
+        const searchRequest = {
+            filters: activeFilters,
+            sort: [{ field: 'id', direction: 'asc' }],
+            page: 0,
+            size: 50
+        };
+
+        const response = await fetch(`${API_CONFIG.ORGANIZATION_SERVICE}/organizations/search`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(searchRequest)
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        displaySearchResults(data.organizations);
+
+    } catch (error) {
+        showAlert(`Error performing search: ${error.message}`, 'danger');
+        console.error('Error:', error);
+    }
+}
+
+function displaySearchResults(organizations) {
+    const container = document.getElementById('searchResults');
+
+    if (organizations.length === 0) {
+        container.innerHTML = `
+            <div class="text-center text-muted py-4">
+                <i class="fas fa-search fa-2x mb-2"></i><br>
+                No organizations found matching your criteria
+            </div>
+        `;
+        return;
+    }
+
+    let html = `
+        <div class="table-responsive">
+            <table class="table table-sm table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Full Name</th>
+                        <th>Type</th>
+                        <th>Annual Turnover</th>
+                        <th>Address</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+
+    organizations.forEach(org => {
+        html += `
+            <tr>
+                <td>${org.id}</td>
+                <td>${escapeHtml(org.name)}</td>
+                <td>${escapeHtml(org.fullName)}</td>
+                <td><span class="badge bg-secondary">${org.type || 'N/A'}</span></td>
+                <td>${org.annualTurnover ? formatCurrency(org.annualTurnover) : 'N/A'}</td>
+                <td>${escapeHtml(org.postalAddress.street)}</td>
+            </tr>
+        `;
+    });
+
+    html += `
+                </tbody>
+            </table>
+        </div>
+        <div class="mt-2 text-muted">Found ${organizations.length} organizations</div>
+    `;
+
+    container.innerHTML = html;
+}
+
+function updateFilterOperatorOptions() {
+    const field = document.getElementById('filterField').value;
+    const operatorSelect = document.getElementById('filterOperator');
+
+    if (field === 'type') {
+        operatorSelect.innerHTML = `
+            <option value="eq">Equals</option>
+            <option value="ne">Not Equals</option>
+            <option value="in">In List</option>
+        `;
+    } else if (field.includes('coordinates')) {
+        operatorSelect.innerHTML = `
+            <option value="eq">Equals</option>
+            <option value="ne">Not Equals</option>
+            <option value="gt">Greater Than</option>
+            <option value="gte">Greater Than or Equal</option>
+            <option value="lt">Less Than</option>
+            <option value="lte">Less Than or Equal</option>
+            <option value="between">Between</option>
+        `;
+    } else {
+        operatorSelect.innerHTML = `
+            <option value="eq">Equals</option>
+            <option value="ne">Not Equals</option>
+            <option value="gt">Greater Than</option>
+            <option value="gte">Greater Than or Equal</option>
+            <option value="lt">Less Than</option>
+            <option value="lte">Less Than or Equal</option>
+            <option value="like">Contains</option>
+            <option value="in">In List</option>
+            <option value="between">Between</option>
+        `;
+    }
+}
