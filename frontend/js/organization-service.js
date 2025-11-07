@@ -608,7 +608,6 @@ async function updateOrganization() {
             }
         };
 
-        // Валидация
         const validationError = validateOrganizationData(organizationData);
         if (validationError) {
             throw new Error(validationError);

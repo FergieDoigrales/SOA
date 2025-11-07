@@ -294,65 +294,65 @@ function showLoading(elementId) {
     }
 }
 
-function generateOrganizationForm(formId) {
-    const form = document.getElementById(formId);
-    form.innerHTML = `
-        <div class="row">
-            <div class="col-md-6">
-                <div class="mb-3">
-                    <label class="form-label">Name *</label>
-                    <input type="text" class="form-control" name="name" required>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="mb-3">
-                    <label class="form-label">Full Name *</label>
-                    <input type="text" class="form-control" name="fullName" required>
-                </div>
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col-md-6">
-                <div class="mb-3">
-                    <label class="form-label">Coordinate X *</label>
-                    <input type="number" step="any" class="form-control" name="coordinates.x" required>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="mb-3">
-                    <label class="form-label">Coordinate Y *</label>
-                    <input type="number" step="any" class="form-control" name="coordinates.y" required>
-                </div>
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col-md-6">
-                <div class="mb-3">
-                    <label class="form-label">Annual Turnover</label>
-                    <input type="number" class="form-control" name="annualTurnover" min="1">
-                    <div class="form-text">Must be greater than 0</div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="mb-3">
-                    <label class="form-label">Type</label>
-                    <select class="form-select" name="type">
-                        <option value="">Select type</option>
-                        <option value="COMMERCIAL">Commercial</option>
-                        <option value="GOVERNMENT">Government</option>
-                        <option value="TRUST">Trust</option>
-                        <option value="PRIVATE_LIMITED_COMPANY">Private Limited Company</option>
-                        <option value="OPEN_JOINT_STOCK_COMPANY">Open Joint Stock Company</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Street Address *</label>
-            <input type="text" class="form-control" name="postalAddress.street" required>
-        </div>
-    `;
-}
+//function generateOrganizationForm(formId) {
+//    const form = document.getElementById(formId);
+//    form.innerHTML = `
+//        <div class="row">
+//            <div class="col-md-6">
+//                <div class="mb-3">
+//                    <label class="form-label">Name *</label>
+//                    <input type="text" class="form-control" name="name" required>
+//                </div>
+//            </div>
+//            <div class="col-md-6">
+//                <div class="mb-3">
+//                    <label class="form-label">Full Name *</label>
+//                    <input type="text" class="form-control" name="fullName" required>
+//                </div>
+//            </div>
+//        </div>
+//
+//        <div class="row">
+//            <div class="col-md-6">
+//                <div class="mb-3">
+//                    <label class="form-label">Coordinate X *</label>
+//                    <input type="number" step="any" class="form-control" name="coordinates.x" required>
+//                </div>
+//            </div>
+//            <div class="col-md-6">
+//                <div class="mb-3">
+//                    <label class="form-label">Coordinate Y *</label>
+//                    <input type="number" step="any" class="form-control" name="coordinates.y" required>
+//                </div>
+//            </div>
+//        </div>
+//
+//        <div class="row">
+//            <div class="col-md-6">
+//                <div class="mb-3">
+//                    <label class="form-label">Annual Turnover</label>
+//                    <input type="number" class="form-control" name="annualTurnover" min="1">
+//                    <div class="form-text">Must be greater than 0</div>
+//                </div>
+//            </div>
+//            <div class="col-md-6">
+//                <div class="mb-3">
+//                    <label class="form-label">Type</label>
+//                    <select class="form-select" name="type">
+//                        <option value="">Select type</option>
+//                        <option value="COMMERCIAL">Commercial</option>
+//                        <option value="GOVERNMENT">Government</option>
+//                        <option value="TRUST">Trust</option>
+//                        <option value="PRIVATE_LIMITED_COMPANY">Private Limited Company</option>
+//                        <option value="OPEN_JOINT_STOCK_COMPANY">Open Joint Stock Company</option>
+//                    </select>
+//                </div>
+//            </div>
+//        </div>
+//
+//        <div class="mb-3">
+//            <label class="form-label">Street Address *</label>
+//            <input type="text" class="form-control" name="postalAddress.street" required>
+//        </div>
+//    `;
+//}
