@@ -19,19 +19,19 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build WildFly image
-        run: docker build -t femeepohua/fergoeqs:wildfly-latest ./first-service
+        run: docker build -t femeepohua/fergoeqs:wildfly-latest -f ./first-service/Dockerfile-wildfly ./first-service
 
       - name: Push WildFly image
         run: docker push femeepohua/fergoeqs:wildfly-latest
 
       - name: Build Payara image
-        run: docker build -t femeepohua/fergoeqs:payara-latest ./second-service
+        run: docker build -t femeepohua/fergoeqs:payara-latest -f ./second-service/Dockerfile-payara ./second-service
 
       - name: Push Payara image
         run: docker push femeepohua/fergoeqs:payara-latest
 
       - name: Build Frontend/Nginx image
-        run: docker build -t femeepohua/fergoeqs:frontend-latest ./nginx
+        run: docker build -t femeepohua/fergoeqs:frontend-latest -f ./nginx/Dockerfile-nginx ./nginx
 
       - name: Push Frontend/Nginx image
         run: docker push femeepohua/fergoeqs:frontend-latest
