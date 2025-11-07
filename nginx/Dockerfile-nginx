@@ -7,4 +7,7 @@ COPY frontend /usr/share/nginx/html
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
+COPY certs-scripts/generate-certs.sh /generate-certs.sh
+RUN chmod +x /generate-certs.sh
+
 ENTRYPOINT ["/entrypoint.sh"]

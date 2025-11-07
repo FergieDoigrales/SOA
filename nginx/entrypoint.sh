@@ -5,6 +5,7 @@ if [ ! -f /certs/server.crt ]; then
     -keyout /certs/server.key \
     -out /certs/server.crt \
     -subj "/CN=localhost"
+  sh /generate-certs.sh
 fi
 
 exec nginx -g "daemon off;"
