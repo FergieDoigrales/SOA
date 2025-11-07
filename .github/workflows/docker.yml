@@ -14,11 +14,13 @@ jobs:
 
       - name: Build WildFly WAR
         run: |
+          chmod +x ./first-service/gradlew ./second-service/gradlew
           cd first-service
           ./gradlew assemble -x test
 
       - name: Build Payara WAR
         run: |
+          chmod +x ./first-service/gradlew ./second-service/gradlew
           cd second-service
           ./gradlew assemble -x test
 
