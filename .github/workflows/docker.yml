@@ -1,0 +1,37 @@
+name: Build and Push Docker Images
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build WildFly image
+        run: docker build -t femeepohua/fergoeqs:wildfly-latest ./first-service
+
+      - name: Push WildFly image
+        run: docker push femeepohua/fergoeqs:wildfly-latest
+
+      - name: Build Payara image
+        run: docker build -t femeepohua/fergoeqs:payara-latest ./second-service
+
+      - name: Push Payara image
+        run: docker push femeepohua/fergoeqs:payara-latest
+
+      - name: Build Frontend/Nginx image
+        run: docker build -t femeepohua/fergoeqs:frontend-latest ./nginx
+
+      - name: Push Frontend/Nginx image
+        run: docker push femeepohua/fergoeqs:frontend-latest
