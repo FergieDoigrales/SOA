@@ -1,47 +1,3 @@
-let orgDirectoryCurrentSorts = [];
-
-function validateTurnoverInput(input) {
-    const value = parseInt(input.value);
-    const min = parseInt(input.min);
-    const max = parseInt(input.max);
-    const messageElement = document.getElementById('turnoverValidationMessage');
-
-    if (isNaN(value)) {
-        input.classList.remove('is-valid', 'is-invalid');
-        messageElement.textContent = '';
-        return;
-    }
-
-    if (value < min || value > max) {
-        input.classList.remove('is-valid');
-        input.classList.add('is-invalid');
-        messageElement.textContent = `Value must be between ${min.toLocaleString()} and ${max.toLocaleString()}`;
-        messageElement.className = 'text-danger';
-    } else {
-        input.classList.remove('is-invalid');
-        input.classList.add('is-valid');
-        messageElement.textContent = '';
-    }
-
-    const minInput = document.getElementById('minTurnover');
-    const maxInput = document.getElementById('maxTurnover');
-    const minValue = parseInt(minInput.value);
-    const maxValue = parseInt(maxInput.value);
-
-    if (!isNaN(minValue) && !isNaN(maxValue) && minValue > maxValue) {
-        messageElement.textContent = 'Min turnover cannot be greater than max turnover';
-        messageElement.className = 'text-danger';
-        minInput.classList.add('is-invalid');
-        maxInput.classList.add('is-invalid');
-    }
-}
-
-function formatTurnoverInput(input) {
-    const value = parseInt(input.value);
-    if (!isNaN(value) && value >= 0) {
-        input.value = value;
-    }
-}
 
 async function filterByTurnover() {
     const minInput = document.getElementById('minTurnover');
@@ -63,8 +19,8 @@ async function filterByTurnover() {
         return;
     }
 
-    if (min > 2147483647 || max > 2147483647) {
-        showAlert('Turnover values cannot exceed 2,147,483,647', 'warning');
+    if (min > FIELD_CONSTRAINTS.annualTurnover.max || max > FIELD_CONSTRAINTS.annualTurnover.max) {
+        showAlert(`Turnover values cannot exceed ${FIELD_CONSTRAINTS.annualTurnover.max}`, 'warning');
         minInput.classList.add('is-invalid');
         maxInput.classList.add('is-invalid');
         return;
@@ -110,7 +66,6 @@ async function filterByTurnover() {
         console.error('Error:', error);
     }
 }
-
 function displayTurnoverResults(organizations, min, max) {
     const container = document.getElementById('orgdirectoryResults');
 
@@ -163,17 +118,37 @@ function displayTurnoverResults(organizations, min, max) {
     container.innerHTML = html;
 }
 
+async function groupByFullNameDirectory() {
+    try {
+        showLoading('orgdirectoryResults');
+
+        const response = await fetch(`${API_CONFIG.ORGDIRECTORY_SERVICE}/orgdirectory/group/fullname`, {
+            method: 'GET'
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        displayGroupedResults(data);
+
+    } catch (error) {
+        showAlert(`Error grouping by full name: ${error.message}`, 'danger');
+        console.error('Error:', error);
+    }
+}
 
 function displayGroupedResults(groups) {
     const container = document.getElementById('orgdirectoryResults');
-    
+
     if (!groups || groups.length === 0) {
         container.innerHTML = '<div class="alert alert-warning">No grouped data found</div>';
         return;
     }
 
     let html = '<h6>Organizations Grouped by Full Name:</h6><div class="table-responsive"><table class="table table-sm table-hover"><thead><tr><th>Full Name</th><th>Count</th><th>Organizations</th></tr></thead><tbody>';
-    
+
     groups.forEach(group => {
         html += `
             <tr>
@@ -183,39 +158,133 @@ function displayGroupedResults(groups) {
             </tr>
         `;
     });
-    
+
     html += '</tbody></table></div>';
     container.innerHTML = html;
 }
 
-function showCountByAddressModal() {
-    const modal = new bootstrap.Modal(document.getElementById('countByAddressModal'));
-    modal.show();
+async function countByAddressDirectory() {
+    const street = document.getElementById('countAddressStreet').value.trim();
+
+    if (!street) {
+        showAlert('Please enter a street address', 'warning');
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_CONFIG.ORGDIRECTORY_SERVICE}/orgdirectory/count/address?street=${encodeURIComponent(street)}`, {
+            method: 'GET'
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const count = await response.json();
+
+        const modal = bootstrap.Modal.getInstance(document.getElementById('countByAddressModal'));
+        modal.hide();
+
+        showAlert(`Found ${count} organizations at address: ${street}`, 'success');
+
+    } catch (error) {
+        showAlert(`Error counting organizations: ${error.message}`, 'danger');
+        console.error('Error:', error);
+    }
 }
 
-function showDeleteByAddressModal() {
-    const modal = new bootstrap.Modal(document.getElementById('deleteByAddressModal'));
-    modal.show();
+async function deleteByAddressDirectory() {
+    const street = document.getElementById('deleteAddressStreet').value.trim();
+
+    if (!street) {
+        showAlert('Please enter a street address', 'warning');
+        return;
+    }
+
+    if (!confirm(`Are you sure you want to delete an organization at address: ${street}?`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_CONFIG.ORGDIRECTORY_SERVICE}/orgdirectory/delete/address`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ street: street })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        const modal = bootstrap.Modal.getInstance(document.getElementById('deleteByAddressModal'));
+        modal.hide();
+
+        showAlert(`Organization deleted successfully: ${result.message}`, 'success');
+
+        if (document.getElementById('minTurnover').value && document.getElementById('maxTurnover').value) {
+            filterByTurnover();
+        }
+
+    } catch (error) {
+        showAlert(`Error deleting organization: ${error.message}`, 'danger');
+        console.error('Error:', error);
+    }
 }
 
+function validateTurnoverInput(input) {
+    const value = parseInt(input.value);
+    const messageElement = document.getElementById('turnoverValidationMessage');
 
+    if (isNaN(value)) {
+        input.classList.remove('is-valid', 'is-invalid');
+        messageElement.textContent = '';
+        return;
+    }
+
+    if (value < 0 || value > FIELD_CONSTRAINTS.annualTurnover.max) {
+        input.classList.remove('is-valid');
+        input.classList.add('is-invalid');
+        messageElement.textContent = `Value must be between 0 and ${FIELD_CONSTRAINTS.annualTurnover.max.toLocaleString()}`;
+        messageElement.className = 'text-danger';
+    } else {
+        input.classList.remove('is-invalid');
+        input.classList.add('is-valid');
+        messageElement.textContent = '';
+    }
+
+    const minInput = document.getElementById('minTurnover');
+    const maxInput = document.getElementById('maxTurnover');
+    const minValue = parseInt(minInput.value);
+    const maxValue = parseInt(maxInput.value);
+
+    if (!isNaN(minValue) && !isNaN(maxValue) && minValue > maxValue) {
+        messageElement.textContent = 'Min turnover cannot be greater than max turnover';
+        messageElement.className = 'text-danger';
+        minInput.classList.add('is-invalid');
+        maxInput.classList.add('is-invalid');
+    }
+}
+function formatTurnoverInput(input) {
+    const value = parseInt(input.value);
+    if (!isNaN(value) && value >= 0) {
+        input.value = value;
+    }
+}
 
 document.addEventListener('DOMContentLoaded', function() {
     const minTurnover = document.getElementById('minTurnover');
     const maxTurnover = document.getElementById('maxTurnover');
-    
-    if (minTurnover) minTurnover.value = '0';
-    if (maxTurnover) maxTurnover.value = '1000000';
-    
-    const modals = [
-        'countByAddressModal',
-        'deleteByAddressModal'
-    ];
-    
-    modals.forEach(modalId => {
-        const modalElement = document.getElementById(modalId);
-        if (modalElement) {
-            new bootstrap.Modal(modalElement);
-        }
-    });
+
+    if (minTurnover) {
+        minTurnover.setAttribute('max', FIELD_CONSTRAINTS.annualTurnover.max);
+        minTurnover.value = '0';
+    }
+    if (maxTurnover) {
+        maxTurnover.setAttribute('max', FIELD_CONSTRAINTS.annualTurnover.max);
+        maxTurnover.value = '1000000';
+    }
 });
