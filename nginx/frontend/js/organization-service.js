@@ -72,8 +72,8 @@ async function editOrganization(id) {
 function populateEditForm(organization) {
     const form = document.getElementById('editForm');
     form.querySelector('[name="name"]').value = organization.name;
-    form.querySelector('[name="coordinates.x"]').value = organization.coordinates.x;
-    form.querySelector('[name="coordinates.y"]').value = organization.coordinates.y;
+    form.querySelector('[name="coordinates.x"]').value = formatNumber(organization.coordinates.x);
+    form.querySelector('[name="coordinates.y"]').value = formatNumber(organization.coordinates.y);
     form.querySelector('[name="annualTurnover"]').value = organization.annualTurnover || '';
     form.querySelector('[name="fullName"]').value = organization.fullName;
     form.querySelector('[name="type"]').value = organization.type || '';
@@ -223,7 +223,7 @@ function parseCoordinateY(value) {
         throw new Error(`Coordinate Y must be between ${FIELD_CONSTRAINTS.coordinatesY.min} and ${FIELD_CONSTRAINTS.coordinatesY.max}`);
     }
 
-    return parseFloat(parsed.toPrecision(7));
+    return parsed;
 }
 
 function validateOrganizationData(data) {
