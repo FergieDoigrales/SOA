@@ -149,6 +149,14 @@ function validateFilterInput() {
                 coordXValue = parts[0] + '.' + parts.slice(1).join('');
             }
 
+            if (coordXValue.includes('.')) {
+                const parts = coordXValue.split('.');
+                if (parts[1].length > 7) {
+                    parts[1] = parts[1].substring(0, 7);
+                    coordXValue = parts[0] + '.' + parts[1];
+                }
+            }
+
             const numXValue = parseFloat(coordXValue || '0');
             if (coordXValue && !isNaN(numXValue) &&
                 (numXValue < FIELD_CONSTRAINTS.coordinatesX.min ||
@@ -175,6 +183,14 @@ function validateFilterInput() {
             if ((coordYValue.match(/\./g) || []).length > 1) {
                 const parts = coordYValue.split('.');
                 coordYValue = parts[0] + '.' + parts.slice(1).join('');
+            }
+
+            if (coordYValue.includes('.')) {
+                const parts = coordYValue.split('.');
+                if (parts[1].length > 7) {
+                    parts[1] = parts[1].substring(0, 7);
+                    coordYValue = parts[0] + '.' + parts[1];
+                }
             }
 
             const numYValue = parseFloat(coordYValue || '0');
@@ -226,6 +242,8 @@ function validateIntegerInput(input) {
 function validateDoubleInput(input) {
     let value = input.value;
 
+    const cursorPosition = input.selectionStart;
+
     value = value.replace(/[^\d.-]/g, '');
 
     if (value.includes('-')) {
@@ -240,6 +258,17 @@ function validateDoubleInput(input) {
         const parts = value.split('.');
         value = parts[0] + '.' + parts.slice(1).join('');
     }
+
+    if (value.includes('.')) {
+        const parts = value.split('.');
+        if (parts[1].length > 7) {
+            parts[1] = parts[1].substring(0, 7);
+            value = parts[0] + '.' + parts[1];
+        }
+    }
+
+    input.value = value;
+    input.setSelectionRange(cursorPosition, cursorPosition);
 
     const numValue = parseFloat(value || '0');
     if (value && !isNaN(numValue) &&
@@ -248,12 +277,12 @@ function validateDoubleInput(input) {
     } else {
         input.classList.remove('is-invalid');
     }
-
-    input.value = value;
 }
 
 function validateFloatInput(input) {
     let value = input.value;
+
+    const cursorPosition = input.selectionStart;
 
     value = value.replace(/[^\d.-]/g, '');
 
@@ -270,6 +299,17 @@ function validateFloatInput(input) {
         value = parts[0] + '.' + parts.slice(1).join('');
     }
 
+    if (value.includes('.')) {
+        const parts = value.split('.');
+        if (parts[1].length > 7) {
+            parts[1] = parts[1].substring(0, 7);
+            value = parts[0] + '.' + parts[1];
+        }
+    }
+
+    input.value = value;
+    input.setSelectionRange(cursorPosition, cursorPosition);
+
     const numValue = parseFloat(value || '0');
     if (value && !isNaN(numValue) &&
         (numValue < FIELD_CONSTRAINTS.coordinatesY.min || numValue > FIELD_CONSTRAINTS.coordinatesY.max)) {
@@ -277,8 +317,6 @@ function validateFloatInput(input) {
     } else {
         input.classList.remove('is-invalid');
     }
-
-    input.value = value;
 }
 
 function validateStringInput(input, constraints) {
@@ -450,7 +488,7 @@ function displayOrganizations(organizations) {
             <td><span class="badge bg-secondary">${org.type || 'N/A'}</span></td>
             <td>${org.annualTurnover ? formatCurrency(org.annualTurnover) : 'N/A'}</td>
             <td>${escapeHtml(org.postalAddress.street)}</td>
-            <td>(${org.coordinates.x}, ${org.coordinates.y})</td>
+            <td>(${formatNumber(org.coordinates.x)}, ${formatNumber(org.coordinates.y)})</td>
             <td>${formatDate(org.creationDate)}</td>
             <td>
                 <button class="btn btn-sm btn-outline-primary me-1" onclick="editOrganization(${org.id})" title="Edit">
@@ -465,6 +503,33 @@ function displayOrganizations(organizations) {
     });
 }
 
+function formatNumber(num, maxDecimals = 7) {
+    if (num === null || num === undefined) return 'N/A';
+
+    const numStr = num.toString();
+
+    if (!numStr.includes('.')) {
+        return numStr;
+    }
+
+    const [integerPart, decimalPart] = numStr.split('.');
+
+    const limitedDecimalPart = decimalPart.substring(0, maxDecimals);
+
+    let result = integerPart;
+    if (limitedDecimalPart && limitedDecimalPart !== '0') {
+        let lastNonZeroIndex = limitedDecimalPart.length - 1;
+        while (lastNonZeroIndex >= 0 && limitedDecimalPart[lastNonZeroIndex] === '0') {
+            lastNonZeroIndex--;
+        }
+
+        if (lastNonZeroIndex >= 0) {
+            result += '.' + limitedDecimalPart.substring(0, lastNonZeroIndex + 1);
+        }
+    }
+
+    return result;
+}
 function clearSorts() {
     currentSorts = [{ field: 'id', direction: 'asc', priority: 1 }];
     updateSortIndicators();
@@ -613,8 +678,10 @@ function generateOrganizationForm(formId) {
                     <input type="text" class="form-control" name="coordinates.x"
                            pattern="${FIELD_CONSTRAINTS.coordinatesX.pattern}"
                            title="Double value (${FIELD_CONSTRAINTS.coordinatesX.min} to ${FIELD_CONSTRAINTS.coordinatesX.max})"
+                           oninput="validateDoubleInput(this)"
+                           maxlength="30"
                            required>
-                    <div class="form-text">Required, Double type, ${FIELD_CONSTRAINTS.coordinatesX.allowedChars}</div>
+                    <div class="form-text">Required, Double type, max 7 decimal places, ${FIELD_CONSTRAINTS.coordinatesX.allowedChars}</div>
                 </div>
             </div>
             <div class="col-md-6">
@@ -623,6 +690,8 @@ function generateOrganizationForm(formId) {
                     <input type="text" class="form-control" name="coordinates.y"
                            pattern="${FIELD_CONSTRAINTS.coordinatesY.pattern}"
                            title="Float value (${FIELD_CONSTRAINTS.coordinatesY.min} to ${FIELD_CONSTRAINTS.coordinatesY.max})"
+                           oninput="validateFloatInput(this)"
+                           maxlength="30"
                            required>
                     <div class="form-text">Required, Float type, ${FIELD_CONSTRAINTS.coordinatesY.allowedChars}</div>
                 </div>
