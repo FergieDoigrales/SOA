@@ -73,6 +73,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function setupEventListeners() {
     document.getElementById('filterField').addEventListener('change', updateFilterOperatorOptions);
+    document.getElementById('filterValue').addEventListener('input', validateFilterInput);
 }
 
 function setupInputValidation() {
@@ -89,6 +90,117 @@ function setupInputValidation() {
             validateStringInput(e.target, FIELD_CONSTRAINTS[fieldName === 'postalAddress.street' ? 'street' : fieldName]);
         }
     });
+}
+
+function validateFilterInput() {
+    const field = document.getElementById('filterField').value;
+    const operator = document.getElementById('filterOperator').value;
+    const input = document.getElementById('filterValue');
+    let value = input.value;
+
+    input.classList.remove('is-invalid', 'is-valid');
+
+    if (!value) return;
+
+    switch (field) {
+        case 'name':
+        case 'fullName':
+        case 'postalAddress.street':
+            if (value.length > FIELD_CONSTRAINTS.name.maxLength) {
+                input.value = value.substring(0, FIELD_CONSTRAINTS.name.maxLength);
+                input.classList.add('is-invalid');
+            } else if (value.length >= 1) {
+                input.classList.add('is-valid');
+            }
+            break;
+
+        case 'annualTurnover':
+            let turnoverValue = value.replace(/[^\d]/g, '');
+
+            if (turnoverValue.length > 1 && turnoverValue.startsWith('0')) {
+                turnoverValue = turnoverValue.replace(/^0+/, '');
+                if (turnoverValue === '') turnoverValue = '0';
+            }
+
+            const numValue = parseInt(turnoverValue || '0');
+            if (turnoverValue && (numValue < FIELD_CONSTRAINTS.annualTurnover.min ||
+                numValue > FIELD_CONSTRAINTS.annualTurnover.max)) {
+                input.classList.add('is-invalid');
+            } else if (turnoverValue) {
+                input.classList.add('is-valid');
+            }
+
+            input.value = turnoverValue;
+            break;
+
+        case 'coordinates.x':
+            let coordXValue = value.replace(/[^\d.-]/g, '');
+
+            if (coordXValue.includes('-')) {
+                if (coordXValue.indexOf('-') !== 0) {
+                    coordXValue = coordXValue.replace(/-/g, '');
+                } else if (coordXValue.lastIndexOf('-') > 0) {
+                    coordXValue = '-' + coordXValue.replace(/-/g, '');
+                }
+            }
+
+            if ((coordXValue.match(/\./g) || []).length > 1) {
+                const parts = coordXValue.split('.');
+                coordXValue = parts[0] + '.' + parts.slice(1).join('');
+            }
+
+            const numXValue = parseFloat(coordXValue || '0');
+            if (coordXValue && !isNaN(numXValue) &&
+                (numXValue < FIELD_CONSTRAINTS.coordinatesX.min ||
+                 numXValue > FIELD_CONSTRAINTS.coordinatesX.max)) {
+                input.classList.add('is-invalid');
+            } else if (coordXValue) {
+                input.classList.add('is-valid');
+            }
+
+            input.value = coordXValue;
+            break;
+
+        case 'coordinates.y':
+            let coordYValue = value.replace(/[^\d.-]/g, '');
+
+            if (coordYValue.includes('-')) {
+                if (coordYValue.indexOf('-') !== 0) {
+                    coordYValue = coordYValue.replace(/-/g, '');
+                } else if (coordYValue.lastIndexOf('-') > 0) {
+                    coordYValue = '-' + coordYValue.replace(/-/g, '');
+                }
+            }
+
+            if ((coordYValue.match(/\./g) || []).length > 1) {
+                const parts = coordYValue.split('.');
+                coordYValue = parts[0] + '.' + parts.slice(1).join('');
+            }
+
+            const numYValue = parseFloat(coordYValue || '0');
+            if (coordYValue && !isNaN(numYValue) &&
+                (numYValue < FIELD_CONSTRAINTS.coordinatesY.min ||
+                 numYValue > FIELD_CONSTRAINTS.coordinatesY.max)) {
+                input.classList.add('is-invalid');
+            } else if (coordYValue) {
+                input.classList.add('is-valid');
+            }
+
+            input.value = coordYValue;
+            break;
+
+        case 'type':
+
+            const validTypes = ['COMMERCIAL', 'GOVERNMENT', 'TRUST', 'PRIVATE_LIMITED_COMPANY', 'OPEN_JOINT_STOCK_COMPANY'];
+            const upperValue = value.toUpperCase();
+
+            if (validTypes.includes(upperValue)) {
+                input.classList.add('is-valid');
+            } else if (value.length > 0) {
+                input.classList.add('is-invalid');
+            }
+            break;
+    }
 }
 
 function validateIntegerInput(input) {
@@ -427,6 +539,7 @@ function showAlert(message, type = 'info') {
     const alert = document.createElement('div');
     alert.className = `alert alert-${type} alert-dismissible fade show`;
     alert.innerHTML = `
+        <i class="fas fa-${getAlertIcon(type)} me-2"></i>
         ${message}
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     `;
@@ -438,6 +551,15 @@ function showAlert(message, type = 'info') {
             alert.remove();
         }
     }, 5000);
+}
+
+function getAlertIcon(type) {
+    switch (type) {
+        case 'success': return 'check-circle';
+        case 'danger': return 'exclamation-triangle';
+        case 'warning': return 'exclamation-circle';
+        default: return 'info-circle';
+    }
 }
 
 function showLoading(elementId) {
@@ -560,10 +682,16 @@ function getFormData(formId) {
 function addFilter() {
     const field = document.getElementById('filterField').value;
     const operator = document.getElementById('filterOperator').value;
-    const value = document.getElementById('filterValue').value;
+    const valueInput = document.getElementById('filterValue');
+    const value = valueInput.value;
 
     if (!field || !operator || !value) {
         showAlert('Please fill all filter fields', 'warning');
+        return;
+    }
+
+    if (valueInput.classList.contains('is-invalid')) {
+        showAlert('Please enter a valid value for the selected field', 'warning');
         return;
     }
 
@@ -575,12 +703,13 @@ function addFilter() {
 
     activeFilters.push(filter);
     updateActiveFiltersDisplay();
-    document.getElementById('filterValue').value = '';
+    valueInput.value = '';
+    valueInput.classList.remove('is-valid');
 }
 
 function parseFilterValue(value, operator, field) {
     if (operator === 'in') {
-        return value.split(',').map(v => v.trim());
+        return value.split(',').map(v => convertFilterValue(v.trim(), field));
     }
     if (operator === 'between') {
         const values = value.split(',').map(v => v.trim());
@@ -598,8 +727,10 @@ function convertFilterValue(value, field) {
     } else if (field.includes('coordinates')) {
         const parsed = parseFloat(value);
         return isNaN(parsed) ? value : parsed;
+    } else if (field === 'type') {
+        return value.toUpperCase();
     }
-    return isNaN(value) ? value : parseFloat(value);
+    return value;
 }
 
 function updateActiveFiltersDisplay() {
@@ -714,6 +845,43 @@ function displaySearchResults(organizations) {
 function updateFilterOperatorOptions() {
     const field = document.getElementById('filterField').value;
     const operatorSelect = document.getElementById('filterOperator');
+    const valueInput = document.getElementById('filterValue');
+
+    valueInput.value = '';
+    valueInput.classList.remove('is-invalid', 'is-valid');
+
+    switch (field) {
+        case 'name':
+        case 'fullName':
+        case 'postalAddress.street':
+            valueInput.type = 'text';
+            valueInput.maxLength = FIELD_CONSTRAINTS.name.maxLength;
+            valueInput.placeholder = `Enter text (max ${FIELD_CONSTRAINTS.name.maxLength} chars)`;
+            break;
+
+        case 'annualTurnover':
+            valueInput.type = 'text';
+            valueInput.pattern = FIELD_CONSTRAINTS.annualTurnover.pattern;
+            valueInput.placeholder = `Enter integer (${FIELD_CONSTRAINTS.annualTurnover.min}-${FIELD_CONSTRAINTS.annualTurnover.max})`;
+            break;
+
+        case 'coordinates.x':
+            valueInput.type = 'text';
+            valueInput.pattern = FIELD_CONSTRAINTS.coordinatesX.pattern;
+            valueInput.placeholder = 'Enter decimal number for X coordinate';
+            break;
+
+        case 'coordinates.y':
+            valueInput.type = 'text';
+            valueInput.pattern = FIELD_CONSTRAINTS.coordinatesY.pattern;
+            valueInput.placeholder = 'Enter decimal number for Y coordinate';
+            break;
+
+        case 'type':
+            valueInput.type = 'text';
+            valueInput.placeholder = 'COMMERCIAL, GOVERNMENT, TRUST, etc';
+            break;
+    }
 
     if (field === 'type') {
         operatorSelect.innerHTML = `
